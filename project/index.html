@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/Favico.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="WAtools - Gestión de modelos de trabajo y herramientas para mantenimiento eólico" />
+    <meta name="theme-color" content="#7cb342" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="WAtools" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="application-name" content="WAtools" />
+    <meta name="msapplication-TileColor" content="#7cb342" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
+    
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/icon-152.png" />
+    <link rel="apple-touch-icon" sizes="144x144" href="/icon-144.png" />
+    <link rel="apple-touch-icon" sizes="120x120" href="/icon-128.png" />
+    <link rel="apple-touch-icon" sizes="114x114" href="/icon-128.png" />
+    <link rel="apple-touch-icon" sizes="76x76" href="/icon-72.png" />
+    <link rel="apple-touch-icon" sizes="72x72" href="/icon-72.png" />
+    <link rel="apple-touch-icon" sizes="60x60" href="/icon-72.png" />
+    <link rel="apple-touch-icon" sizes="57x57" href="/icon-72.png" />
+    
+    <!-- Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <title>WAtools - Wind Advance</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- PWA Install Prompt -->
+    <script>
+      let deferredPrompt;
+      let installButton;
+
+      // Register service worker for PWA
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+              console.log('SW registered: ', registration);
+              
+              // Check for updates
+              registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                newWorker.addEventListener('statechange', () => {
+                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    // New content is available, prompt user to refresh
+                    if (confirm('Nueva versión disponible. ¿Actualizar ahora?')) {
+                      window.location.reload();
+                    }
+                  }
+                });
+              });
+            })
+            .catch((registrationError) => {
+              console.log('SW registration failed: ', registrationError);
+            });
+        });
+      }
+
+      // PWA Install prompt
+      window.addEventListener('beforeinstallprompt', (e) => {
+        console.log('beforeinstallprompt fired');
+        e.preventDefault();
+        deferredPrompt = e;
+        
+        // Show install button
+        showInstallButton();
+      });
+
+      // Show install button
+      function showInstallButton() {
+        // Create install button if it doesn't exist
+        if (!installButton) {
+          installButton = document.createElement('button');
+          installButton.innerHTML = '📱 Instalar App';
+          installButton.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #7cb342;
+            color: white;
+            border: none;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(124, 179, 66, 0.3);
+            z-index: 1000;
+            transition: all 0.3s ease;
+          `;
+          
+          installButton.addEventListener('mouseenter', () => {
+            installButton.style.transform = 'translateY(-2px)';
+            installButton.style.boxShadow = '0 6px 16px rgba(124, 179, 66, 0.4)';
+          });
+          
+          installButton.addEventListener('mouseleave', () => {
+            installButton.style.transform = 'translateY(0)';
+            installButton.style.boxShadow = '0 4px 12px rgba(124, 179, 66, 0.3)';
+          });
+          
+          installButton.addEventListener('click', installApp);
+          document.body.appendChild(installButton);
+        }
+        
+        installButton.style.display = 'block';
+        
+        // Hide button after 10 seconds
+        setTimeout(() => {
+          if (installButton) {
+            installButton.style.display = 'none';
+          }
+        }, 10000);
+      }
+
+      // Install app function
+      async function installApp() {
+        if (!deferredPrompt) return;
+        
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        
+        console.log(`User response to the install prompt: ${outcome}`);
+        
+        if (outcome === 'accepted') {
+          console.log('User accepted the install prompt');
+        } else {
+          console.log('User dismissed the install prompt');
+        }
+        
+        deferredPrompt = null;
+        if (installButton) {
+          installButton.style.display = 'none';
+        }
+      }
+
+      // Handle successful installation
+      window.addEventListener('appinstalled', (evt) => {
+        console.log('App was installed successfully');
+        if (installButton) {
+          installButton.style.display = 'none';
+        }
+      });
+
+      // iOS Safari install instructions
+      function isIOS() {
+        return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+      }
+
+      function isInStandaloneMode() {
+        return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+      }
+
+      // Show iOS install instructions
+      if (isIOS() && !isInStandaloneMode()) {
+        setTimeout(() => {
+          const iosPrompt = document.createElement('div');
+          iosPrompt.innerHTML = `
+            <div style="
+              position: fixed;
+              bottom: 20px;
+              left: 20px;
+              right: 20px;
+              background: white;
+              border: 2px solid #7cb342;
+              border-radius: 12px;
+              padding: 16px;
+              box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+              z-index: 1000;
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            ">
+              <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                <span style="font-size: 24px; margin-right: 8px;">📱</span>
+                <strong style="color: #7cb342;">Instalar WAtools</strong>
+              </div>
+              <p style="margin: 0 0 12px 0; font-size: 14px; color: #666;">
+                Para instalar esta app: toca <strong>Compartir</strong> 
+                <span style="font-size: 18px;">⬆️</span> y luego 
+                <strong>"Añadir a pantalla de inicio"</strong> 
+                <span style="font-size: 18px;">➕</span>
+              </p>
+              <button onclick="this.parentElement.parentElement.remove()" style="
+                background: #7cb342;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 6px;
+                font-size: 14px;
+                cursor: pointer;
+              ">Entendido</button>
+            </div>
+          `;
+          document.body.appendChild(iosPrompt);
+          
+          // Auto-hide after 15 seconds
+          setTimeout(() => {
+            if (iosPrompt.parentElement) {
+              iosPrompt.remove();
+            }
+          }, 15000);
+        }, 3000);
+      }
+    </script>
+  </body>
+</html>
